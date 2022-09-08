@@ -1,7 +1,6 @@
 package com.io2c.httpproxyserver;
 
 import com.io2c.httpproxyserver.codec.MyByteToMessageDecoder;
-import com.io2c.httpproxyserver.codec.MyHttpObjectAggregator;
 import com.io2c.httpproxyserver.container.Container;
 import com.io2c.httpproxyserver.container.ContainerHelper;
 import com.io2c.httpproxyserver.handler.https.HttpProxyRequestHandler;

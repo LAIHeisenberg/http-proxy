@@ -3,7 +3,8 @@ package com.io2c.httpproxyserver.parser;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.Hashtable;
+import java.util.LinkedHashMap;
+import java.util.function.BiConsumer;
 
 /**
  * Class for HTTP request parsing as defined by RFC 2612:
@@ -18,11 +19,11 @@ import java.util.Hashtable;
 public class HttpRequestParser {
 
     private String _requestLine;
-    private Hashtable<String, String> _requestHeaders;
+    private LinkedHashMap<String, String> _requestHeaders;
     private StringBuffer _messagetBody;
 
     public HttpRequestParser() {
-        _requestHeaders = new Hashtable<String, String>();
+        _requestHeaders = new LinkedHashMap<String, String>();
         _messagetBody = new StringBuffer();
     }
 
@@ -33,8 +34,6 @@ public class HttpRequestParser {
      *            String holding http request.
      * @throws IOException
      *             If an I/O error occurs reading the input stream.
-     * @throws HttpFormatException
-     *             If HTTP Request is malformed
      */
     public void parseRequest(String request) throws IOException, RuntimeException {
         BufferedReader reader = new BufferedReader(new StringReader(request));
@@ -95,6 +94,11 @@ public class HttpRequestParser {
         return _messagetBody.toString();
     }
 
+    public void setMessageBody(String messageBody){
+        this._messagetBody = new StringBuffer(messageBody);
+    }
+
+
     private void appendMessageBody(String bodyLine) {
         _messagetBody.append(bodyLine).append("\r\n");
     }
@@ -106,5 +110,20 @@ public class HttpRequestParser {
      */
     public String getHeaderParam(String headerName){
         return _requestHeaders.get(headerName);
+    }
+
+    public String getHttpRequestRaw(){
+        final StringBuffer httpRequestRowBuffer = new StringBuffer();
+        httpRequestRowBuffer.append(_requestLine+"\n");
+//        httpRequestRowBuffer.append("Vary: Origin\n");
+//        httpRequestRowBuffer.append("Vary: Access-Control-Request-Method\n");
+        _requestHeaders.forEach(new BiConsumer<String, String>() {
+            @Override
+            public void accept(String s, String s2) {
+                httpRequestRowBuffer.append(s+":"+s2+"\n");
+            }
+        });
+        httpRequestRowBuffer.append("\n");
+        return httpRequestRowBuffer.append(_messagetBody).toString();
     }
 }
