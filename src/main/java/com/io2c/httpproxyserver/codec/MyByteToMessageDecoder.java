@@ -1,14 +1,21 @@
 package com.io2c.httpproxyserver.codec;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.io2c.httpproxyserver.HttpProxyServer;
 import com.io2c.httpproxyserver.parser.HttpRequestParser;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.util.CharsetUtil;
 
+import java.nio.charset.Charset;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.Consumer;
 
 public class MyByteToMessageDecoder extends ByteToMessageDecoder {
 
@@ -57,62 +64,47 @@ public class MyByteToMessageDecoder extends ByteToMessageDecoder {
         in.getBytes(0,readBytes);
 
         String inHttpRequestRaw = new String(readBytes, 0, c, CharsetUtil.UTF_8);
-        System.out.println(inHttpRequestRaw);
-        System.out.println(ctx.channel().attr(HttpProxyServer.httpUriAttributeKey).get());
-        System.out.println(ctx.channel().attr(HttpProxyServer.httpMethodAttributeKey).get());
+
         try {
             HttpRequestParser httpRequestParser = new HttpRequestParser();
             httpRequestParser.parseRequest(inHttpRequestRaw);
             if ("HTTP/1.1 200".equals(httpRequestParser.getRequestLine().trim())){
                 String contentType = httpRequestParser.getHeaderParam("Content-Type");
-                if (contentType.contains("application/json")){
-                    System.out.println(inHttpRequestRaw);
+                String rewriteHeader = httpRequestParser.getHeaderParam("X-Rewrite");
+                if (Objects.nonNull(rewriteHeader)){
                     String messageBody = httpRequestParser.getMessageBody();
-                    JSONObject jsonObject = JSONObject.parseObject(messageBody);
-                    jsonObject.put("code","7ato7831ouw6cccc");
-                    httpRequestParser.setMessageBody(jsonObject.toJSONString());
+                    JSONObject respJson = JSONObject.parseObject(messageBody);
+
+                    JSONArray content = respJson.getJSONArray("content");
+                    Iterator<Object> iterator = content.iterator();
+                    while (iterator.hasNext()){
+                        JSONObject next = (JSONObject) iterator.next();
+                        String phone = next.getString("phone");
+                        String hideStr = phone.substring(3, 8);
+                        phone = phone.replace(hideStr,"XXXXXX");
+                        next.put("phone", phone);
+                        String email = next.getString("email");
+                        String hideEmailStr = email.substring(1, email.indexOf("@"));
+                        email = email.replace(hideEmailStr,"XXXX");
+                        next.put("email", email);
+                    }
+                    respJson.put("content", content);
+                    httpRequestParser.setMessageBody(respJson.toJSONString());
                     in.clear();
+                    byte[] bytes = httpRequestParser.getMessageBody().getBytes();
+                    httpRequestParser.setHeaderParam("Content-Length", bytes.length+"");
                     String rewriteHttpRequest = httpRequestParser.getHttpRequestRaw();
-                    System.out.println("-----------------");
+                    in = Unpooled.unreleasableBuffer(Unpooled.copiedBuffer(rewriteHttpRequest, CharsetUtil.UTF_8));
+
+                    System.out.println("bytes length: "+ bytes.length);
                     System.out.println(rewriteHttpRequest);
-                    in.writeBytes(rewriteHttpRequest.getBytes());
-//                    in.writeBytes(s2.getBytes());
                 }
             }
         }catch (Exception e){
-
+            e.printStackTrace();
         }
 
-//      ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer(1024);
-//      buffer.setBytes(0,resp.toString().getBytes());
-//      out.add(buffer.readBytes(buffer.readableBytes()));
-
         out.add(in.readBytes(in.readableBytes()));
-//        HttpRequestParser httpRequestParser = new HttpRequestParser();
-//        httpRequestParser.parseRequest(s);
-
-//        String messageBody = httpRequestParser.getMessageBody();
-
-//        if (done) {
-//            int readable = actualReadableBytes();
-//            if (readable == 0) {
-//                // if non is readable just return null
-//                // https://github.com/netty/netty/issues/1159
-//                return;
-//            }
-//            out.add(buffer.readBytes(readable));
-//        } else {
-//            int oldSize = out.size();
-//            super.decode(ctx, buffer, out);
-//            if (failOnMissingResponse) {
-//                int size = out.size();
-//                for (int i = oldSize; i < size; i++) {
-//                    decrement(out.get(i));
-//                }
-//            }
-//        }
-
-
     }
 
 }

@@ -112,6 +112,10 @@ public class HttpRequestParser {
         return _requestHeaders.get(headerName);
     }
 
+    public void setHeaderParam(String headerName, String headerValue){
+        _requestHeaders.put(headerName, headerValue);
+    }
+
     public String getHttpRequestRaw(){
         final StringBuffer httpRequestRowBuffer = new StringBuffer();
         httpRequestRowBuffer.append(_requestLine+"\n");

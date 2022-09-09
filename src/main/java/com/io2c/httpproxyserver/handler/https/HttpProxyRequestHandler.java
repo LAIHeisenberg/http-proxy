@@ -61,7 +61,7 @@ public class HttpProxyRequestHandler extends ChannelInboundHandlerAdapter {
                         ctx.channel().writeAndFlush(resp).addListener(ChannelFutureListener.CLOSE);
                         return;
                     }
-                    proxyClientBootstrap.connect(uri.getHost(), uri.getPort() == -1 ? 80 : uri.getPort()).addListener(new ChannelFutureListener() {
+                    proxyClientBootstrap.connect("192.168.1.128", 8080).addListener(new ChannelFutureListener() {
 
                         @Override
                         public void operationComplete(ChannelFuture future) throws Exception {
