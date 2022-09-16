@@ -3,10 +3,7 @@ package com.io2c.httpproxyserver;
 import com.io2c.httpproxyserver.codec.MyByteToMessageDecoder;
 import com.io2c.httpproxyserver.container.Container;
 import com.io2c.httpproxyserver.container.ContainerHelper;
-import com.io2c.httpproxyserver.handler.https.HttpProxyRequestHandler;
-import com.io2c.httpproxyserver.handler.https.HttpsCommandHandler;
-import com.io2c.httpproxyserver.handler.https.HttpsTunnelProxyChannelHandler;
-import com.io2c.httpproxyserver.handler.https.HttpsTunnelProxyRealServerChannelHandler;
+import com.io2c.httpproxyserver.handler.https.*;
 import com.io2c.httpproxyserver.handler.socks.Socks5CommandRequestHandler;
 import com.io2c.httpproxyserver.handler.socks.Socks5InitialRequestHandler;
 import com.io2c.httpproxyserver.handler.socks.Socks5PasswordAuthRequestHandler;
@@ -38,7 +35,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.ExecutionException;
 
 /**
  * @author fei.feng
@@ -119,7 +115,6 @@ public class HttpProxyServer implements Container {
             public void initChannel(SocketChannel ch) throws Exception {
 
                 ch.pipeline().addLast("myByteToMessageDecoder",new MyByteToMessageDecoder()).addLast("httpClientCodec", new HttpClientCodec());
-//                ch.pipeline().addLast("httpClientCodec", new HttpClientCodec());
                 ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
 
                     @Override
@@ -299,7 +294,9 @@ public class HttpProxyServer implements Container {
             public void initChannel(SocketChannel ch) {
                 ChannelPipeline pipeline = ch.pipeline();
                 pipeline.addLast(new HttpsCommandHandler(proxyClientBootstrap));
-                pipeline.addLast("httpServerCodec", new HttpServerCodec()).addLast("httpRequestHandler", new HttpProxyRequestHandler(proxyClientBootstrap, configuration));
+                pipeline.addLast("httpServerCodec", new HttpServerCodec())
+                        .addLast("httpRequestHandler", new HttpProxyRequestHandler(proxyClientBootstrap, configuration))
+                        .addLast("myChannelOutboundHandler",new MyChannelOutboundHandler());
             }
         });
     }
