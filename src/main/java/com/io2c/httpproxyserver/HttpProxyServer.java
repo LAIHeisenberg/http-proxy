@@ -114,7 +114,10 @@ public class HttpProxyServer implements Container {
             @Override
             public void initChannel(SocketChannel ch) throws Exception {
 
-                ch.pipeline().addLast("myByteToMessageDecoder",new MyByteToMessageDecoder()).addLast("httpClientCodec", new HttpClientCodec());
+                ch.pipeline()
+//                        .addLast("myByteToMessageDecoder",new MyByteToMessageDecoder())
+                        .addLast("httpClientCodec", new HttpClientCodec())
+                        .addLast("httpObjectAggregator",new HttpObjectAggregator(512*1024*1024));
                 ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
 
                     @Override
